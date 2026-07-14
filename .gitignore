@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Training/runtime outputs are too large for the paper code repository.
+output/
+log_save/
+out/
+checkpoints/
+
+# Keep precomputed figures/metrics in results/ for GitHub.
+results/*.npz
+# Upload data/dfm_lc_mc_case.npz with the Zenodo artifact instead.
+data/*.npz

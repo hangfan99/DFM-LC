@@ -1,0 +1,101 @@
+
+era5_npy: &era5_npy
+  type: "weather_dataset"
+  data_dir: 'data/era5_np128x256'
+  length: 13
+  file_stride: 6
+  sample_stride: 1
+  vnames:
+    constants: []
+    single_level_vnames: ['u10', 'v10', 't2m', 'msl']
+    multi_level_vnames: ['z', 'q', 'u', 'v', 't']
+    # multi_level_vnames_dict: 
+    #   z: [50, 100, 150, 200, 250, 300, 400, 500, 600, 700, 850, 925, 1000]
+    #   t: [50, 100, 150, 200, 250, 300, 400, 500, 600, 700, 850, 925, 1000]
+    #   r: [50, 100, 150, 200, 250, 300, 400, 500, 600, 700, 850, 925, 1000]
+    #   u: [50, 100, 150, 200, 250, 300, 400, 500, 600, 700, 850, 925, 1000]
+    #   v: [50, 100, 150, 200, 250, 300, 400, 500, 600, 700, 850, 925, 1000]
+    hight_level_list: [50, 100, 150, 200, 250, 300, 400, 500, 600, 700, 850, 925, 1000]
+
+model:
+  type: "LGUnet_all"
+  min_pred_len: 12
+  max_pred_len: 12
+  network_params:
+    img_size: [128, 256]
+    patch_size: [2, 2]
+    stride: [2, 2]
+    inchans_list: [4, 13, 13, 13, 13, 13,]
+    outchans_list: [8, 26, 26, 26, 26, 26]
+    in_chans: 138
+    out_chans: 138
+    enc_dim: 96
+    embed_dim: 1152
+    window_size: 4
+    enc_depths: [2, 2]
+    enc_heads: [3, 6]
+    lg_depths: [4, 4, 4]
+    lg_heads: [6, 6, 6]
+    Weather_T: 1
+    drop_path: 0.
+    use_checkpoint: True
+    inp_length: 1
+    use_mlp: False
+
+
+  metrics_list: ["MAE", "MSE"]
+  save_best: &loss_type "Possloss"
+
+  AE_loss: True
+  AE_weight: 1 # 1.0
+  AE_checkpoint_path: "checkpoints/vaeformer_ae.pth"
+  AE_model_version: "34_4"
+  AE_stats_dir:
+
+  AE_only: True
+  AE_logvar_static: False
+
+  save_epoch: True
+
+  extra_params:
+    loss_type: *loss_type
+    checkpoint_path: "checkpoints/DFM-warm-start.pth"
+    two_step_training: True
+
+  optimizer_params:
+    type: "AdamW"
+    params:
+      lr: 3.0e-7
+      # weight_decay: 0.1
+      betas: [0.9, 0.9]
+
+  lr_params:
+    sched: constant
+    epochs: &maxepoch 4
+    min_lr: 0.
+    warmup_lr: 5e-6
+    warmup_epochs: 0
+    lr_noise: 
+    cooldown_epochs: 0
+
+dataset:
+  train:
+    <<: *era5_npy
+    file_stride: 6
+    sample_stride: 1
+
+  test:
+    <<: *era5_npy
+    file_stride: 6
+    sample_stride: 1
+
+dataloader:
+  num_workers: 1
+  pin_memory: True
+  prefetch_factor: 2
+  persistent_workers: True
+
+trainer:
+  batch_size: 1
+  test_batch_size: 1
+  max_epoch: *maxepoch
